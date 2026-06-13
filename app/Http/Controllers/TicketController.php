@@ -7,6 +7,7 @@ use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Requests\UpdateTicketRequest;
+use App\Models\Comment;
 use App\Models\Organisation;
 use App\Models\Ticket;
 use App\Models\User;
@@ -78,11 +79,39 @@ class TicketController extends Controller
     {
         Gate::authorize('view', $ticket);
 
+        $user = $request->user();
+        $isStaff = \in_array($user->role, [UserRole::ADMIN, UserRole::AGENT]);
+
+        $comments = $ticket->comments()
+            ->with('user:id,name,role')
+            ->when(! $isStaff, fn ($q) => $q->where('is_internal', false))
+            ->oldest()
+            ->paginate(10)
+            ->through(fn ($comment) => [
+                'id' => $comment->id,
+                'body' => $comment->body,
+                'is_internal' => $comment->is_internal,
+                'created_at' => $comment->created_at,
+                'user' => [
+                    'id' => $comment->user->id,
+                    'name' => $comment->user->name,
+                    'role' => $comment->user->role->value,
+                ],
+                'can' => [
+                    'update' => $user->can('update', $comment),
+                    'delete' => $user->can('delete', $comment),
+                ],
+            ]);
+
         return Inertia::render('tickets/Show', [
             'ticket' => $ticket->load(['organisation', 'user', 'assignedAgent']),
+            'comments' => $comments,
+            'ticketUserId' => $ticket->user_id,
+            'isStaff' => $isStaff,
             'can' => [
-                'edit' => $request->user()->canAny(['update', 'updateByAgent'], $ticket),
-                'delete' => $request->user()->can('delete', $ticket),
+                'edit' => $user->canAny(['update', 'updateByAgent'], $ticket),
+                'delete' => $user->can('delete', $ticket),
+                'comment' => $user->can('create', [Comment::class, $ticket]),
             ],
         ]);
     }
@@ -119,7 +148,7 @@ class TicketController extends Controller
 
     public function update(UpdateTicketRequest $request, Ticket $ticket): RedirectResponse
     {
-        $this->service->update($request->user(), $ticket, $request->validated());
+        $this->service->update($ticket, $request->validated());
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Ticket updated.']);
 

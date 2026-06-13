@@ -2,65 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Requests\StoreCommentRequest;
 use App\Http\Requests\UpdateCommentRequest;
 use App\Models\Comment;
+use App\Models\Ticket;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 
 class CommentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function store(StoreCommentRequest $request, Ticket $ticket): RedirectResponse
     {
-        //
+        $data = $request->validated();
+        $isStaff = in_array($request->user()->role, [UserRole::ADMIN, UserRole::AGENT]);
+
+        $ticket->comments()->create([
+            'user_id' => $request->user()->id,
+            'body' => $data['body'],
+            'is_internal' => $isStaff && ($data['is_internal'] ?? false),
+        ]);
+
+        return to_route('tickets.show', $ticket);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function update(UpdateCommentRequest $request, Comment $comment): RedirectResponse
     {
-        //
+        $comment->update($request->validated());
+
+        return to_route('tickets.show', $comment->ticket_id);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreCommentRequest $request)
+    public function destroy(Comment $comment): RedirectResponse
     {
-        //
-    }
+        Gate::authorize('delete', $comment);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Comment $comment)
-    {
-        //
-    }
+        $ticketId = $comment->ticket_id;
+        $comment->delete();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Comment $comment)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateCommentRequest $request, Comment $comment)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Comment $comment)
-    {
-        //
+        return to_route('tickets.show', $ticketId);
     }
 }

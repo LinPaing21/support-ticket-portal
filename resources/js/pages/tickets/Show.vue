@@ -2,6 +2,7 @@
 import { Head, Link, router, setLayoutProps } from '@inertiajs/vue3';
 import TicketController from '@/actions/App/Http/Controllers/TicketController';
 import Heading from '@/components/Heading.vue';
+import TicketComments from '@/components/TicketComments.vue';
 import { Button } from '@/components/ui/button';
 import { index } from '@/routes/tickets';
 
@@ -21,9 +22,22 @@ type Ticket = {
     user: User | null;
     assigned_agent: User | null;
 };
+type CommentUser = { id: number; name: string; role: string };
+type Comment = {
+    id: number;
+    body: string;
+    is_internal: boolean;
+    created_at: string;
+    user: CommentUser;
+    can: { update: boolean; delete: boolean };
+};
+type PaginationLink = { url: string | null; label: string; active: boolean };
 type Props = {
     ticket: Ticket;
-    can: { edit: boolean; delete: boolean };
+    comments: { data: Comment[]; links: PaginationLink[] };
+    ticketUserId: number;
+    isStaff: boolean;
+    can: { edit: boolean; delete: boolean; comment: boolean };
 };
 
 const props = defineProps<Props>();
@@ -66,7 +80,7 @@ function destroy() {
     <Head :title="ticket.title" />
 
     <div class="flex h-full flex-1 flex-col p-4">
-        <div class="max-w-2xl space-y-6">
+        <div class="max-w-3xl space-y-6">
             <div class="flex items-start justify-between">
                 <Heading :title="ticket.title" />
                 <div class="flex gap-2">
@@ -113,6 +127,14 @@ function destroy() {
                     <dd>{{ new Date(ticket.created_at).toLocaleDateString() }}</dd>
                 </div>
             </dl>
+
+            <TicketComments
+                :ticket-id="ticket.id"
+                :ticket-user-id="ticketUserId"
+                :comments="comments"
+                :is-staff="isStaff"
+                :can-comment="can.comment"
+            />
         </div>
     </div>
 </template>
