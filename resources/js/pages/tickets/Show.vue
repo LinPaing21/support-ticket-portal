@@ -79,13 +79,13 @@ function destroy() {
 
             <div class="flex items-center gap-2">
                 <span :class="['rounded px-2 py-0.5 text-xs font-medium capitalize', statusClass[ticket.status]]">
-                    {{ ticket.status.replace('_', ' ') }}
+                    Status: {{ ticket.status.replace('_', ' ') }}
                 </span>
                 <span :class="['rounded px-2 py-0.5 text-xs font-medium capitalize', priorityClass[ticket.priority]]">
-                    {{ ticket.priority }}
+                    Priority: {{ ticket.priority }}
                 </span>
                 <span :class="['rounded px-2 py-0.5 text-xs font-medium', deadlineStatusConfig[ticket.deadline_status].class]">
-                    {{ deadlineStatusConfig[ticket.deadline_status].label }}
+                    Deadline: {{ deadlineStatusConfig[ticket.deadline_status].label }}
                 </span>
             </div>
 
