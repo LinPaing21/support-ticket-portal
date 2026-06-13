@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Building2, FolderGit2, LayoutGrid, Users } from '@lucide/vue';
+import { BookOpen, Building2, FolderGit2, LayoutGrid, Ticket, Users } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as organisations } from '@/routes/organisations';
+import { index as tickets } from '@/routes/tickets';
 import { index as users } from '@/routes/users';
 import type { Auth, NavItem } from '@/types';
 
@@ -27,6 +28,7 @@ const mainNavItems = computed<NavItem[]>(() =>
     [
         { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
         can.value['organisations.viewAny'] ? { title: 'Organisations', href: organisations(), icon: Building2 } : null,
+        can.value['tickets.viewAny'] ? { title: 'Tickets', href: tickets(), icon: Ticket } : null,
         can.value['users.viewAny'] ? { title: 'Users', href: users(), icon: Users } : null,
     ].filter((item) => item !== null),
 );

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Organisation;
+use App\Models\Ticket;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -47,6 +48,7 @@ class HandleInertiaRequests extends Middleware
                 'can' => [
                     'users.viewAny' => $user?->can('viewAny', User::class) ?? false,
                     'organisations.viewAny' => $user?->can('viewAny', Organisation::class) ?? false,
+                    'tickets.viewAny' => $user?->can('viewAny', Ticket::class) ?? false,
                 ],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

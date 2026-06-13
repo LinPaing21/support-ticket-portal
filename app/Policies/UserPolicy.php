@@ -41,4 +41,9 @@ class UserPolicy
     {
         return $user->role === UserRole::ADMIN;
     }
+
+    public function viewAnyAgent(User $user): bool
+    {
+        return $user->role === UserRole::ADMIN || $user->role === UserRole::AGENT;
+    }
 }

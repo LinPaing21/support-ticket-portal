@@ -10,7 +10,7 @@ class OrganisationPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role === UserRole::ADMIN;
+        return $user->role === UserRole::ADMIN || $user->role === UserRole::AGENT;
     }
 
     public function view(User $user, Organisation $organisation): bool
