@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
+use App\Traits\HasTableFilters;
 use App\Traits\Users\UserRelationshipTrait;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -33,7 +34,13 @@ use Illuminate\Support\Carbon;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, UserRelationshipTrait;
+    use HasFactory, HasTableFilters, Notifiable, UserRelationshipTrait;
+
+    /** @var array<int, string> */
+    public array $filterable = ['name', 'email'];
+
+    /** @var array<int, string> */
+    public array $sortable = ['name', 'email', 'role', 'created_at'];
 
     /**
      * @return array<string, string>

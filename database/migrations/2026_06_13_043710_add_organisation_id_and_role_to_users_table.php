@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\TableName;
+use App\Enums\UserRole;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,7 +12,7 @@ return new class extends Migration
     {
         Schema::table(TableName::USERS->value, function (Blueprint $table) {
             $table->foreignId('organisation_id')->nullable()->after('id')->constrained(TableName::ORGANISATIONS->value)->nullOnDelete();
-            $table->string('role')->after('password');
+            $table->string('role')->default(UserRole::CLIENT)->after('password');
         });
     }
 

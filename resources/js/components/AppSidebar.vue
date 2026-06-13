@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, FolderGit2, LayoutGrid } from '@lucide/vue';
+import { computed } from 'vue';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, FolderGit2, LayoutGrid, Users } from '@lucide/vue';
 import AppLogo from '@/components/AppLogo.vue';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
@@ -15,15 +16,18 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
+import { index as users } from '@/routes/users';
+import type { Auth, NavItem } from '@/types';
 
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
+const page = usePage<{ auth: Auth }>();
+const can = computed(() => page.props.auth.can);
+
+const mainNavItems = computed<NavItem[]>(() =>
+    [
+        { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+        can.value['users.viewAny'] ? { title: 'Users', href: users(), icon: Users } : null,
+    ].filter((item) => item !== null),
+);
 
 const footerNavItems: NavItem[] = [
     {
