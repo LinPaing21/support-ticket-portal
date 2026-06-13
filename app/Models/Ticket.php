@@ -1,0 +1,66 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\TicketPriority;
+use App\Enums\TicketStatus;
+use Database\Factories\TicketFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property int $id
+ * @property int $organisation_id
+ * @property int $user_id
+ * @property int|null $assigned_agent_id
+ * @property string $title
+ * @property string $description
+ * @property TicketStatus $status
+ * @property TicketPriority $priority
+ * @property Carbon $sla_deadline
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+#[Fillable(['organisation_id', 'user_id', 'assigned_agent_id', 'title', 'description', 'status', 'priority', 'sla_deadline'])]
+class Ticket extends Model
+{
+    /** @use HasFactory<TicketFactory> */
+    use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'status' => TicketStatus::class,
+            'priority' => TicketPriority::class,
+            'sla_deadline' => 'datetime',
+        ];
+    }
+
+    /** @return BelongsTo<Organisation, $this> */
+    public function organisation(): BelongsTo
+    {
+        return $this->belongsTo(Organisation::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function assignedAgent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_agent_id');
+    }
+
+    /** @return HasMany<Comment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+}
