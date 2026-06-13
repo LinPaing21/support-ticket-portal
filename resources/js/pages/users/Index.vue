@@ -141,6 +141,11 @@ const columns: { key: string; label: string }[] = [
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+                    <TableRow v-if="users.data.length === 0">
+                        <TableCell :colspan="columns.length + 1" class="text-muted-foreground py-10 text-center">
+                            No users found.
+                        </TableCell>
+                    </TableRow>
                     <TableRow v-for="user in users.data" :key="user.id">
                         <TableCell class="font-medium">{{ user.name }}</TableCell>
                         <TableCell class="text-muted-foreground">{{ user.email }}</TableCell>

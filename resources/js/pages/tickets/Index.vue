@@ -192,6 +192,11 @@ const columns: { key: string; label: string }[] = [
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+                    <TableRow v-if="tickets.data.length === 0">
+                        <TableCell :colspan="columns.length + 1" class="text-muted-foreground py-10 text-center">
+                            No tickets found.
+                        </TableCell>
+                    </TableRow>
                     <TableRow v-for="ticket in tickets.data" :key="ticket.id">
                         <TableCell class="font-medium">{{ ticket.title }}</TableCell>
                         <TableCell>

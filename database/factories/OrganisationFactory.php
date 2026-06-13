@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Organisation;
+use App\Services\OrganisationService;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +20,7 @@ class OrganisationFactory extends Factory
 
         return [
             'name' => $name,
-            'short_code' => strtoupper(fake()->unique()->lexify('???')),
+            'short_code' => app(OrganisationService::class)->generateShortCode(),
             'joined_at' => fake()->dateTimeBetween('-2 years', 'now'),
         ];
     }

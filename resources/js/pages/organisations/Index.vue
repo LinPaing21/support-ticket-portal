@@ -95,6 +95,11 @@ const columns: { key: string; label: string }[] = [
                     </TableRow>
                 </TableHeader>
                 <TableBody>
+                    <TableRow v-if="organisations.data.length === 0">
+                        <TableCell :colspan="columns.length + 1" class="text-muted-foreground py-10 text-center">
+                            No organisations found.
+                        </TableCell>
+                    </TableRow>
                     <TableRow v-for="org in organisations.data" :key="org.id">
                         <TableCell class="font-medium">{{ org.name }}</TableCell>
                         <TableCell>

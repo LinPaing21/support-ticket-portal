@@ -47,7 +47,7 @@ class OrganisationService
         $this->repository->delete($organisation);
     }
 
-    private function generateShortCode(): string
+    public function generateShortCode(): string
     {
         do {
             $code = Str::upper(Str::random(7));
