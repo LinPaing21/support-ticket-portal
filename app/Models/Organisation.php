@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasTableFilters;
 use Database\Factories\OrganisationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,7 +22,13 @@ use Illuminate\Support\Carbon;
 class Organisation extends Model
 {
     /** @use HasFactory<OrganisationFactory> */
-    use HasFactory;
+    use HasFactory, HasTableFilters;
+
+    /** @var array<int, string> */
+    public array $filterable = ['name', 'short_code'];
+
+    /** @var array<int, string> */
+    public array $sortable = ['name', 'short_code', 'joined_at', 'created_at'];
 
     protected function casts(): array
     {
