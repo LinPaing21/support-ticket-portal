@@ -33,6 +33,8 @@ const props = withDefaults(
     },
 );
 
+defineOptions({ inheritAttrs: false });
+
 const emit = defineEmits<{
     'update:modelValue': [value: string | number | null];
 }>();
@@ -43,6 +45,7 @@ function labelFor(val: string | number | null): string {
 </script>
 
 <template>
+    <div v-bind="$attrs">
     <Combobox
         :model-value="modelValue"
         :display-value="() => labelFor(modelValue)"
@@ -79,4 +82,5 @@ function labelFor(val: string | number | null): string {
         </ComboboxList>
     </Combobox>
     <input v-if="name" type="hidden" :name="name" :value="modelValue ?? ''" />
+    </div>
 </template>

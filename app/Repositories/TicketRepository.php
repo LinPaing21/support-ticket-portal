@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\DTOs\TicketFilterDTO;
 use App\Models\Ticket;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -13,19 +14,15 @@ class TicketRepository
         return (new Ticket)->sortable;
     }
 
-    public function paginate(
-        string $sort,
-        string $direction,
-        string $search = '',
-        ?int $organisationId = null,
-        ?int $userId = null,
-        int $perPage = 15,
-    ): LengthAwarePaginator {
+    public function paginate(TicketFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
+    {
         return Ticket::with(['organisation', 'user', 'assignedAgent'])
-            ->globalSearch($search)
-            ->sorting($sort, $direction)
-            ->when($organisationId, fn ($q) => $q->where('organisation_id', $organisationId))
-            ->when($userId, fn ($q) => $q->where('user_id', $userId))
+            ->globalSearch($filters->search)
+            ->sorting($filters->sort, $filters->direction)
+            ->when($filters->organisationId, fn ($q) => $q->where('organisation_id', $filters->organisationId))
+            ->deadlineStatus($filters->deadlineStatus)
+            ->when($filters->status, fn ($q) => $q->where('status', $filters->status))
+            ->when($filters->priority, fn ($q) => $q->where('priority', $filters->priority))
             ->paginate($perPage)
             ->withQueryString();
     }

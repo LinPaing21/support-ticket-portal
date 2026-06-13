@@ -2,7 +2,10 @@
 
 namespace App\Services;
 
+use App\DTOs\TicketFilterDTO;
+use App\Enums\DeadlineStatus;
 use App\Enums\TicketPriority;
+use App\Enums\TicketStatus;
 use App\Enums\UserRole;
 use App\Models\Ticket;
 use App\Models\User;
@@ -22,14 +25,41 @@ class TicketService
         return $this->repository->sortable();
     }
 
-    public function list(User $user, string $sort, string $direction, string $search = ''): LengthAwarePaginator
+    /** @return array<int, array{value: string, label: string}> */
+    public function statusOptions(): array
+    {
+        return collect(TicketStatus::cases())->map(fn ($s) => [
+            'value' => $s->value,
+            'label' => ucwords(str_replace('_', ' ', $s->value)),
+        ])->all();
+    }
+
+    /** @return array<int, array{value: string, label: string}> */
+    public function priorityOptions(): array
+    {
+        return collect(TicketPriority::cases())->map(fn ($p) => [
+            'value' => $p->value,
+            'label' => ucwords($p->value),
+        ])->all();
+    }
+
+    /** @return array<int, array{value: string, label: string}> */
+    public function deadlineStatusOptions(): array
+    {
+        return collect(DeadlineStatus::cases())->map(fn ($s) => [
+            'value' => $s->value,
+            'label' => ucwords(str_replace('-', ' ', $s->value)),
+        ])->all();
+    }
+
+    public function list(User $user, TicketFilterDTO $filters): LengthAwarePaginator
     {
         $organisationId = match ($user->role) {
             UserRole::ORGANISATION_OWNER, UserRole::CLIENT => $user->organisation_id,
-            default => null,
+            default => $filters->organisationId,
         };
 
-        return $this->repository->paginate($sort, $direction, $search, $organisationId);
+        return $this->repository->paginate($filters->withOrganisationId($organisationId));
     }
 
     public function create(User $user, array $data): Ticket

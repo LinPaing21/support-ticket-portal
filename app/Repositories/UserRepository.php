@@ -13,9 +13,12 @@ class UserRepository
         return (new User)->sortable;
     }
 
-    public function paginate(string $sort, string $direction, int $perPage = 15): LengthAwarePaginator
+    public function paginate(string $sort, string $direction, string $search = '', ?string $role = null, ?int $organisationId = null, int $perPage = 15): LengthAwarePaginator
     {
         return User::with('organisation')
+            ->globalSearch($search)
+            ->when($role, fn ($q) => $q->where('role', $role))
+            ->when($organisationId, fn ($q) => $q->where('organisation_id', $organisationId))
             ->sorting($sort, $direction)
             ->paginate($perPage)
             ->withQueryString();

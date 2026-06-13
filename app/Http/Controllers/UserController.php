@@ -7,6 +7,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Organisation;
 use App\Models\User;
+use App\Services\OrganisationService;
 use App\Services\UserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,10 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
-    public function __construct(private readonly UserService $service) {}
+    public function __construct(
+        private readonly UserService $service,
+        private readonly OrganisationService $organisationService,
+    ) {}
 
     public function index(Request $request): Response
     {
@@ -24,13 +28,21 @@ class UserController extends Controller
 
         $sort = $request->string('sort', 'created_at');
         $direction = $request->string('direction', 'desc');
+        $search = $request->string('search', '');
+        $role = $request->string('role') ?: null;
+        $organisationId = $request->integer('organisation_id') ?: null;
 
         return Inertia::render('users/Index', [
-            'users' => $this->service->list($sort, $direction),
+            'users' => $this->service->list($sort, $direction, $search, $role, $organisationId),
             'sortable' => $this->service->sortable(),
+            'roleOptions' => $this->service->roleOptions(),
+            'organisations' => $this->organisationService->getOrganisationsForSelect(),
             'filters' => [
                 'sort' => $sort,
                 'direction' => $direction,
+                'search' => $search,
+                'role' => $role ?? '',
+                'organisation_id' => $organisationId ?? '',
             ],
         ]);
     }

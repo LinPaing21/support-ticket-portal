@@ -1,19 +1,25 @@
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ArrowDown, ArrowUp, ArrowUpDown } from '@lucide/vue';
 import UserController from '@/actions/App/Http/Controllers/UserController';
+import ComboboxSelect from '@/components/ComboboxSelect.vue';
 import Heading from '@/components/Heading.vue';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { index } from '@/routes/users';
 
 type Organisation = { id: number; name: string };
-type User = { id: number; name: string; email: string; role: string; organisation: Organisation | null };
+type Option = { value: string; label: string };
+type User = { id: number; name: string; email: string; role: string; organisation: Organisation | null; created_at: string };
 type PaginationLink = { url: string | null; label: string; active: boolean };
-type Filters = { sort: string; direction: 'asc' | 'desc' };
+type Filters = { sort: string; direction: 'asc' | 'desc'; search: string; role: string; organisation_id: string | number };
 type Props = {
     users: { data: User[]; links: PaginationLink[] };
     sortable: string[];
+    roleOptions: Option[];
+    organisations: Organisation[];
     filters: Filters;
 };
 
@@ -25,14 +31,54 @@ defineOptions({
     },
 });
 
+const search = ref(props.filters.search);
+const role = ref<string | null>(props.filters.role || null);
+const organisationId = ref<string | number | null>(props.filters.organisation_id || null);
+
+function navigate(overrides: Record<string, unknown> = {}) {
+    router.get(
+        index(),
+        {
+            search: search.value,
+            sort: props.filters.sort,
+            direction: props.filters.direction,
+            role: role.value,
+            organisation_id: organisationId.value,
+            ...overrides,
+        },
+        { preserveState: true, preserveScroll: true },
+    );
+}
+
+let searchTimeout: ReturnType<typeof setTimeout>;
+watch(search, (value) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => navigate({ search: value }), 300);
+});
+
+let clearing = false;
+watch(role, () => { if (!clearing) { navigate(); } });
+watch(organisationId, () => { if (!clearing) { navigate(); } });
+
+const hasActiveFilters = computed(() => !!(search.value || role.value || organisationId.value));
+
+function clearFilters() {
+    clearing = true;
+    search.value = '';
+    role.value = null;
+    organisationId.value = null;
+    clearing = false;
+    navigate({ search: '', role: null, organisation_id: null });
+}
+
 function sortBy(column: string) {
-    if (!props.sortable.includes(column)) return;
+    if (!props.sortable.includes(column)) { return; }
     const direction = props.filters.sort === column && props.filters.direction === 'asc' ? 'desc' : 'asc';
-    router.get(index(), { sort: column, direction }, { preserveState: true, preserveScroll: true });
+    navigate({ sort: column, direction });
 }
 
 function sortIcon(column: string) {
-    if (props.filters.sort !== column) return ArrowUpDown;
+    if (props.filters.sort !== column) { return ArrowUpDown; }
     return props.filters.direction === 'asc' ? ArrowUp : ArrowDown;
 }
 
@@ -59,6 +105,20 @@ const columns: { key: string; label: string }[] = [
             <Heading title="Users" description="Manage system users" />
             <Button as-child>
                 <Link :href="UserController.create.url()">New user</Link>
+            </Button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <Input v-model="search" placeholder="Search by name or email…" class="max-w-sm" />
+            <ComboboxSelect v-model="role" :options="roleOptions" placeholder="Role…" class="w-44" />
+            <ComboboxSelect
+                v-model="organisationId"
+                :options="organisations.map((o) => ({ value: String(o.id), label: o.name }))"
+                placeholder="Organisation…"
+                class="w-48"
+            />
+            <Button v-if="hasActiveFilters" variant="ghost" size="sm" class="bg-red-400 text-white" @click="clearFilters">
+                Clear filters
             </Button>
         </div>
 

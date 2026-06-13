@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\DeadlineStatus;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
 use App\Traits\HasTableFilters;
 use Database\Factories\TicketFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,7 +37,7 @@ class Ticket extends Model
     use HasFactory, HasTableFilters;
 
     /** @var array<int, string> */
-    protected $appends = ['deadline_status'];
+    protected $appends = ['deadline_status', 'sla_deadline_formatted', 'created_at_formatted'];
 
     /** @var array<int, string> */
     public array $filterable = ['title', 'description'];
@@ -47,19 +49,63 @@ class Ticket extends Model
     {
         return Attribute::make(
             get: function (): string {
+                if ($this->status === TicketStatus::RESOLVED || $this->status === TicketStatus::CLOSED) {
+                    return DeadlineStatus::COMPLETED->value;
+                }
+
                 $secondsRemaining = now()->diffInSeconds($this->sla_deadline, false);
 
-                if ($secondsRemaining <= 0) { // pass deadline
-                    return 'overdue';
+                if ($secondsRemaining <= 0) {
+                    return DeadlineStatus::OVERDUE->value;
                 }
 
-                if ($secondsRemaining <= 3600) { // in 1 hour
-                    return 'due-soon';
+                if ($secondsRemaining <= 3600) {
+                    return DeadlineStatus::DUE_SOON->value;
                 }
 
-                return 'on-track';
+                return DeadlineStatus::ON_TRACK->value;
             }
         );
+    }
+
+    protected function slaDeadlineFormatted(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->sla_deadline?->format('M j, Y, g:i A').' UTC'
+        );
+    }
+
+    protected function createdAtFormatted(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->created_at?->format('M j, Y')
+        );
+    }
+
+    /**
+     * Filters by deadline status using SQL conditions that mirror the deadlineStatus accessor logic.
+     * Each case translates to the equivalent time-based or status-based database condition so the
+     * filter runs at the query level rather than post-loading all rows and discarding non-matches.
+     *
+     * - completed : ticket is resolved or closed (SLA no longer relevant)
+     * - overdue   : open/in-progress and past the SLA deadline
+     * - due-soon  : open/in-progress and deadline within the next hour
+     * - on-track  : open/in-progress and more than one hour remaining
+     */
+    public function scopeDeadlineStatus(Builder $query, ?DeadlineStatus $status): Builder
+    {
+        if ($status === null) {
+            return $query;
+        }
+
+        $closed = [TicketStatus::RESOLVED->value, TicketStatus::CLOSED->value];
+
+        return match ($status) {
+            DeadlineStatus::COMPLETED => $query->whereIn('status', $closed),
+            DeadlineStatus::OVERDUE => $query->whereNotIn('status', $closed)->where('sla_deadline', '<=', now()),
+            DeadlineStatus::DUE_SOON => $query->whereNotIn('status', $closed)->where('sla_deadline', '>', now())->where('sla_deadline', '<=', now()->addHour()),
+            DeadlineStatus::ON_TRACK => $query->whereNotIn('status', $closed)->where('sla_deadline', '>', now()->addHour()),
+        };
     }
 
     protected function casts(): array

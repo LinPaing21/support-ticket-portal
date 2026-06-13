@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\TicketPriority;
-use App\Enums\TicketStatus;
+use App\DTOs\TicketFilterDTO;
 use App\Enums\UserRole;
 use App\Http\Requests\StoreTicketRequest;
 use App\Http\Requests\UpdateTicketRequest;
@@ -11,6 +10,7 @@ use App\Models\Comment;
 use App\Models\Organisation;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\OrganisationService;
 use App\Services\TicketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,24 +20,35 @@ use Inertia\Response;
 
 class TicketController extends Controller
 {
-    public function __construct(private readonly TicketService $service) {}
+    public function __construct(
+        private readonly TicketService $service,
+        private readonly OrganisationService $organisationService,
+    ) {}
 
     public function index(Request $request): Response
     {
         Gate::authorize('viewAny', Ticket::class);
 
         $user = $request->user();
-        $sort = $request->string('sort', 'created_at');
-        $direction = $request->string('direction', 'desc');
-        $search = $request->string('search', '');
+        $filters = TicketFilterDTO::fromRequest($request);
 
         return Inertia::render('tickets/Index', [
-            'tickets' => $this->service->list($user, $sort, $direction, $search),
+            'tickets' => $this->service->list($user, $filters),
             'sortable' => $this->service->sortable(),
+            'statusOptions' => $this->service->statusOptions(),
+            'priorityOptions' => $this->service->priorityOptions(),
+            'deadlineStatusOptions' => $this->service->deadlineStatusOptions(),
+            'organisations' => $user->isStaff
+                ? $this->organisationService->getOrganisationsForSelect()
+                : [],
             'filters' => [
-                'sort' => $sort,
-                'direction' => $direction,
-                'search' => $search,
+                'sort' => $filters->sort,
+                'direction' => $filters->direction,
+                'search' => $filters->search,
+                'status' => $filters->status ?? '',
+                'priority' => $filters->priority ?? '',
+                'deadline_status' => $filters->deadlineStatus?->value ?? '',
+                'organisation_id' => $filters->organisationId ?? '',
             ],
         ]);
     }
@@ -50,17 +61,12 @@ class TicketController extends Controller
 
         return Inertia::render('tickets/Create', [
             'organisations' => $user->can('viewAny', Organisation::class)
-                ? Organisation::select('id', 'name')->orderBy('name')->get()
+                ? $this->organisationService->getOrganisationsForSelect()
                 : [],
-            'agents' => $user->can('viewAnyAgent', User::class) ? User::where('role', UserRole::AGENT->value)
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get()
+            'agents' => $user->can('viewAnyAgent', User::class)
+                ? User::where('role', UserRole::AGENT->value)->select('id', 'name')->orderBy('name')->get()
                 : [],
-            'priorities' => collect(TicketPriority::cases())->map(fn ($p) => [
-                'value' => $p->value,
-                'label' => ucwords(str_replace('_', ' ', $p->value)),
-            ]),
+            'priorities' => $this->service->priorityOptions(),
             'isAdmin' => $user->role === UserRole::ADMIN,
             'isAgent' => $user->role === UserRole::AGENT,
         ]);
@@ -80,11 +86,10 @@ class TicketController extends Controller
         Gate::authorize('view', $ticket);
 
         $user = $request->user();
-        $isStaff = \in_array($user->role, [UserRole::ADMIN, UserRole::AGENT]);
 
         $comments = $ticket->comments()
             ->with('user:id,name,role')
-            ->when(! $isStaff, fn ($q) => $q->where('is_internal', false))
+            ->when(! $user->isStaff, fn ($q) => $q->where('is_internal', false))
             ->oldest()
             ->paginate(10)
             ->through(fn ($comment) => [
@@ -107,7 +112,7 @@ class TicketController extends Controller
             'ticket' => $ticket->load(['organisation', 'user', 'assignedAgent']),
             'comments' => $comments,
             'ticketUserId' => $ticket->user_id,
-            'isStaff' => $isStaff,
+            'isStaff' => $user->isStaff,
             'can' => [
                 'edit' => $user->canAny(['update', 'updateByAgent'], $ticket),
                 'delete' => $user->can('delete', $ticket),
@@ -125,21 +130,13 @@ class TicketController extends Controller
         return Inertia::render('tickets/Edit', [
             'ticket' => $ticket,
             'organisations' => $user->can('viewAny', Organisation::class)
-                ? Organisation::select('id', 'name')->orderBy('name')->get()
+                ? $this->organisationService->getOrganisationsForSelect()
                 : [],
-            'agents' => $user->can('viewAnyAgent', User::class) ? User::where('role', UserRole::AGENT->value)
-                ->select('id', 'name')
-                ->orderBy('name')
-                ->get()
+            'agents' => $user->can('viewAnyAgent', User::class)
+                ? User::where('role', UserRole::AGENT->value)->select('id', 'name')->orderBy('name')->get()
                 : [],
-            'priorities' => collect(TicketPriority::cases())->map(fn ($p) => [
-                'value' => $p->value,
-                'label' => ucwords(str_replace('_', ' ', $p->value)),
-            ]),
-            'statuses' => collect(TicketStatus::cases())->map(fn ($s) => [
-                'value' => $s->value,
-                'label' => ucwords(str_replace('_', ' ', $s->value)),
-            ]),
+            'priorities' => $this->service->priorityOptions(),
+            'statuses' => $this->service->statusOptions(),
             'isAdmin' => $user->role === UserRole::ADMIN,
             'isAgent' => $user->role === UserRole::AGENT,
             'isAgentUpdate' => $user->can('updateByAgent', $ticket),

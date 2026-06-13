@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Organisation;
 use App\Repositories\OrganisationRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
 
 class OrganisationService
@@ -17,6 +18,11 @@ class OrganisationService
     public function sortable(): array
     {
         return $this->repository->sortable();
+    }
+
+    public function getOrganisationsForSelect(): Collection
+    {
+        return $this->repository->getForSelect();
     }
 
     public function list(string $sort, string $direction, string $search = ''): LengthAwarePaginator

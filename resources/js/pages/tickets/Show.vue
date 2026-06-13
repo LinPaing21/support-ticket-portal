@@ -8,16 +8,16 @@ import { index } from '@/routes/tickets';
 
 type Organisation = { id: number; name: string };
 type User = { id: number; name: string };
-type DeadlineStatus = 'on-track' | 'due-soon' | 'overdue';
+type DeadlineStatus = 'on-track' | 'due-soon' | 'overdue' | 'completed';
 type Ticket = {
     id: number;
     title: string;
     description: string;
     status: string;
     priority: string;
-    sla_deadline: string;
+    sla_deadline_formatted: string;
     deadline_status: DeadlineStatus;
-    created_at: string;
+    created_at_formatted: string;
     organisation: Organisation | null;
     user: User | null;
     assigned_agent: User | null;
@@ -67,6 +67,7 @@ const deadlineStatusConfig: Record<DeadlineStatus, { label: string; class: strin
     'on-track': { label: 'On Track', class: 'bg-green-100 text-green-700' },
     'due-soon': { label: 'Due Soon', class: 'bg-yellow-100 text-yellow-700' },
     overdue: { label: 'Overdue', class: 'bg-red-100 text-red-700' },
+    completed: { label: 'Completed', class: 'bg-gray-100 text-gray-600' },
 };
 
 function destroy() {
@@ -120,11 +121,11 @@ function destroy() {
                 </div>
                 <div class="flex gap-4">
                     <dt class="w-36 shrink-0 text-muted-foreground">SLA Deadline</dt>
-                    <dd>{{ new Date(ticket.sla_deadline).toLocaleString() }}</dd>
+                    <dd>{{ ticket.sla_deadline_formatted }}</dd>
                 </div>
                 <div class="flex gap-4">
                     <dt class="w-36 shrink-0 text-muted-foreground">Created</dt>
-                    <dd>{{ new Date(ticket.created_at).toLocaleDateString() }}</dd>
+                    <dd>{{ ticket.created_at_formatted }}</dd>
                 </div>
             </dl>
 

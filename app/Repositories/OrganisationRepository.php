@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\Organisation;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 class OrganisationRepository
 {
@@ -11,6 +12,12 @@ class OrganisationRepository
     public function sortable(): array
     {
         return (new Organisation)->sortable;
+    }
+
+    /** @return Collection<int, Organisation> */
+    public function getForSelect(): Collection
+    {
+        return Organisation::select('id', 'name')->orderBy('name')->get();
     }
 
     public function paginate(string $sort, string $direction, string $search = '', int $perPage = 15): LengthAwarePaginator
