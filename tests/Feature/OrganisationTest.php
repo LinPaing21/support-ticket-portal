@@ -6,7 +6,7 @@ use App\Enums\UserRole;
 use App\Models\Organisation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 use Tests\TestCase;
 
 class OrganisationTest extends TestCase
@@ -28,7 +28,7 @@ class OrganisationTest extends TestCase
     {
         $organisation = Organisation::factory()->create();
 
-        $this->assertInstanceOf(Carbon::class, $organisation->joined_at);
+        $this->assertInstanceOf(CarbonInterface::class, $organisation->joined_at);
     }
 
     public function test_organisation_has_many_users(): void
