@@ -67,9 +67,18 @@ I would have preferred to use **Laravel Spatie Roles & Permissions** for a more 
 
 ---
 
-## Time & Scope
+## ⏱️ Time Spent & Scoping
 
-**Total time:** 7 hours 35 minutes (excluding documentation).
+This prototype was scoped and built within a strict timebox, taking a total of **7 hours and 35 minutes (excluding documentation)** of effective work. The time was allocated across the software development lifecycle as follows:
+
+- **Phase 1: Architecture & Setup (1 Hour, 30 Minutes)**
+  - Database schema modeling, ERD planning, framework bootstrapping (Laravel + Inertia + Vue 3), and authentication scaffolding.
+- **Phase 2: Core Domain Logic & CRUD (3 Hours, 30 Minutes)**
+  - Building Organisation, User, and Ticket database migrations, models, factories, form validation requests, and core controller actions.
+- **Phase 3: Business Features & Enhancements (2 Hours)**
+  - Implementing the comment/internal note authorization controls, advanced queueable email notifications, search/filtering logic, and system loggers.
+- **Phase 4: Testing & Documentation (35 Minutes)**
+  - Writing representative HTTP feature tests for role-based data isolation, validating SLA state shifts, and compiling technical documentation.
 
 All core requirements were completed within the timebox. Beyond the base requirements, I also implemented:
 
