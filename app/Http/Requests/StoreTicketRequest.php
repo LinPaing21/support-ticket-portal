@@ -27,7 +27,7 @@ class StoreTicketRequest extends FormRequest
             'description' => ['required', 'string'],
             'priority' => ['required', new Enum(TicketPriority::class)],
             'organisation_id' => [
-                Rule::requiredIf(fn () => $this->user()->role === UserRole::ADMIN),
+                Rule::requiredIf(fn () => $this->user()->isStaff),
                 'nullable', 'integer', 'exists:organisations,id',
             ],
             'assigned_agent_id' => ['nullable', 'integer', 'exists:users,id'],

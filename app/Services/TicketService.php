@@ -7,11 +7,13 @@ use App\Enums\DeadlineStatus;
 use App\Enums\TicketPriority;
 use App\Enums\TicketStatus;
 use App\Enums\UserRole;
+use App\Events\TicketCreated;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Repositories\TicketRepository;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 
 class TicketService
 {
@@ -65,20 +67,41 @@ class TicketService
     public function create(User $user, array $data): Ticket
     {
         $data['user_id'] = $user->id;
-        $data['organisation_id'] = $user->role === UserRole::ADMIN
+        $data['organisation_id'] = $user->isStaff
             ? $data['organisation_id']
             : $user->organisation_id;
         $data['sla_deadline'] = $this->calculateSlaDeadline(TicketPriority::from($data['priority']));
 
-        return $this->repository->create($data);
+        $ticket = $this->repository->create($data);
+
+        if (!$user->isStaff) {
+            TicketCreated::dispatch($ticket);
+        }
+
+        return $ticket;
     }
 
     public function update(Ticket $ticket, array $data): Ticket
     {
+        if (isset($data['status'])) {
+            $newStatus = $data['status'];
+            $oldStatus = $ticket->status->value;
+
+            if ($newStatus !== $oldStatus) {
+                Log::info(auth()->user()->name . "  changed status from {$oldStatus} to {$newStatus}", [
+                    'ticket_id' => $ticket->id,
+                ]);
+            }
+        }
+
         if (isset($data['priority'])) {
             $newPriority = TicketPriority::from($data['priority']);
 
             if ($newPriority !== $ticket->priority) {
+                Log::info(auth()->user()->name . " changed priority from {$ticket->priority->value} to {$newPriority->value}", [
+                    'ticket_id' => $ticket->id,
+                ]);
+
                 $data['sla_deadline'] = $this->calculateSlaDeadline($newPriority);
             }
         }
